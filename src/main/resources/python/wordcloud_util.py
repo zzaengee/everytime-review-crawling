@@ -2,7 +2,9 @@
 # requirements:
 # pip install konlpy wordcloud
 
-from konlpy.tag import Mecab
+# wordcloud_util.py
+from konlpy.tag import Okt
+tokenizer = Okt()
 from collections import Counter
 
 # Mecab 객체 초기화

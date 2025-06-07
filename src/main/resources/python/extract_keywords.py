@@ -1,22 +1,34 @@
-# extract_keywords.py
-# 이 스크립트는 Java에서 subprocess로 호출되어
-# JSON 형태의 리뷰 리스트를 입력받아 키워드 상위 20개를 JSON으로 출력함
-
-import sys
+from konlpy.tag import Okt
+from collections import Counter
 import json
-from wordcloud_util import load_stopwords, extract_keywords, get_top_keywords
 
-# 리뷰 리스트를 표준 입력에서 받기
-input_text = sys.stdin.read()
-reviews = json.loads(input_text)
+# 형태소 분석기 초기화
+okt = Okt()
 
-# 불용어 로드
-stopwords = load_stopwords("stopwords.txt")
+# 불용어 로딩 함수
+def load_stopwords(path='stopwords.txt'):
+    try:
+        with open(path, encoding='utf-8') as f:
+            return set(line.strip() for line in f if line.strip())
+    except FileNotFoundError:
+        return set()
 
-# 키워드 추출 및 빈도 집계
-keywords = extract_keywords(reviews, stopwords)
-top_keywords = get_top_keywords(keywords, top_n=20)
+# 키워드 추출 함수
+def extract_keywords(texts, stopwords_path='stopwords.txt'):
+    stopwords = load_stopwords(stopwords_path)
+    keywords = []
 
-# 결과를 JSON 형식으로 출력
-result = [{"keyword": kw, "count": count} for kw, count in top_keywords]
-print(json.dumps(result, ensure_ascii=False))
+    for text in texts:
+        # 명사만 추출
+        nouns = okt.nouns(text)
+        # 길이 1 초과 단어만 포함
+        filtered = [word for word in nouns if len(word) > 1 and word not in stopwords]
+        keywords.extend(filtered)
+
+    return keywords
+
+# 상위 N개 키워드 추출
+def get_top_keywords(keywords, n=20):
+    counter = Counter(keywords)
+    top_n = counter.most_common(n)
+    return [{'keyword': k, 'count': v} for k, v in top_n]
