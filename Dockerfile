@@ -14,11 +14,6 @@ ENV PATH="/opt/venv/bin:$PATH"
 RUN pip install --upgrade pip && \
     pip install konlpy wordcloud matplotlib
 
-# 나눔글꼴 설정 (워드클라우드용)
-RUN mkdir -p /usr/share/fonts/truetype/nanum && \
-    curl -o /tmp/Nanum.zip https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_2107@1.0/NanumSquareNeo-aLt.ttf && \
-    cp /tmp/NanumSquareNeo-aLt.ttf /usr/share/fonts/truetype/nanum/NanumSquareNeo.ttf
-
 WORKDIR /app
 
 COPY . /app
