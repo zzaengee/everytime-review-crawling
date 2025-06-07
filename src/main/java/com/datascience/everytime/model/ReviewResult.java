@@ -15,4 +15,5 @@ public class ReviewResult {
     private List<ReviewSnippet> positiveReviews;
     private List<ReviewSnippet> negativeReviews;
     private List<ReviewSnippet> neutralReviews;
+    private List<KeywordEntry> topKeywords;
 }

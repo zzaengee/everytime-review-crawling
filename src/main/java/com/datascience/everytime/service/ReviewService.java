@@ -5,15 +5,14 @@ import com.datascience.everytime.model.LectureProfessorPair;
 import com.datascience.everytime.model.ReviewEntry;
 import com.datascience.everytime.model.ReviewResult;
 import com.datascience.everytime.model.ReviewSnippet;
+import com.datascience.everytime.model.KeywordEntry;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.opencsv.bean.CsvToBeanBuilder;
 import org.springframework.stereotype.Service;
 
-import java.io.FileReader;
-import java.util.Comparator;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+
+import java.io.*;
+import java.util.*;
 
 @Service
 public class ReviewService {
@@ -70,9 +69,7 @@ public class ReviewService {
 
         if (filtered.isEmpty()) {
             return new ReviewResult("(데이터 없음)", professor, 0, 0, 0,
-                                        List.<ReviewSnippet>of(),
-                                        List.<ReviewSnippet>of(),
-                                        List.<ReviewSnippet>of());
+            List.of(), List.of(), List.of(), List.of());
         }
 
         String actualLectureName = filtered.get(0).getLecture();
@@ -82,10 +79,10 @@ public class ReviewService {
         long neg = filtered.stream().filter(r -> r.getSentiment().equals("부정")).count();
         long neu = filtered.stream().filter(r -> r.getSentiment().equals("중립")).count();
 
-        double avgStar = filtered.stream()
-            .mapToInt(r -> Integer.parseInt(r.getStar()))
-            .average()
-            .orElse(0.0);
+        //double avgStar = filtered.stream()
+            //.mapToInt(r -> Integer.parseInt(r.getStar()))
+            //.average()
+            //.orElse(0.0);
 
         List<ReviewSnippet> posReviews = filtered.stream()
             .filter(r -> r.getSentiment().equals("긍정"))
@@ -105,10 +102,17 @@ public class ReviewService {
             .limit(5)
             .toList();
 
+        List<String> reviewTexts = filtered.stream()
+            .map(ReviewEntry::getReview)
+            .toList();
+
+        List<KeywordEntry> topKeywords = KeywordExtractor.extractTopKeywords(reviewTexts);
+
         return new ReviewResult(actualLectureName, professor,
                 (int) (pos * 100 / total),
                 (int) (neg * 100 / total),
                 (int) (neu * 100 / total),
-                posReviews, negReviews, neuReviews);
-    }
+                posReviews, negReviews, neuReviews,
+                topKeywords);  // ✅ 여기에 topKeywords 추가
+            }
 }
