@@ -1,11 +1,10 @@
-// ReviewService.java (수정된 getReviewResult 함수 포함)
-
 package com.datascience.everytime.service;
 
 import com.datascience.everytime.model.*;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.opencsv.bean.CsvToBeanBuilder;
+import jakarta.annotation.PostConstruct;
 import org.springframework.stereotype.Service;
 
 import java.io.*;
@@ -23,21 +22,43 @@ public class ReviewService {
             "컴퓨팅사고", "컴퓨팅사고_reviews_labeled.csv"
     );
 
-    public List<LectureProfessorPair> getLectureProfessorPairs() throws Exception {
-        Set<LectureProfessorPair> pairSet = new HashSet<>();
+    private final Map<String, List<ReviewEntry>> labeledCache = new HashMap<>();
+    private final Map<String, List<ReviewEntry>> keywordCache = new HashMap<>();
 
+    @PostConstruct
+    public void init() throws IOException {
         for (String fileName : LECTURE_FILE_MAP.values()) {
-            List<ReviewEntry> entries = new CsvToBeanBuilder<ReviewEntry>(new FileReader("data/" + fileName))
+            String labeledPath = "data/" + fileName;
+            List<ReviewEntry> labeled = new CsvToBeanBuilder<ReviewEntry>(new FileReader(labeledPath))
                     .withType(ReviewEntry.class)
                     .withIgnoreLeadingWhiteSpace(true)
                     .build()
                     .parse();
+            labeledCache.put(fileName, labeled);
 
-            for (ReviewEntry entry : entries) {
-                pairSet.add(new LectureProfessorPair(
-                        entry.getLecture().trim(),
-                        entry.getProfessor().trim()
-                ));
+            String keywordPath = "data/통합_" + fileName.replace("_reviews_labeled.csv", "_reviews.csv");
+            List<ReviewEntry> keywords = new CsvToBeanBuilder<ReviewEntry>(new FileReader(keywordPath))
+                    .withType(ReviewEntry.class)
+                    .withIgnoreLeadingWhiteSpace(true)
+                    .build()
+                    .parse();
+            keywordCache.put(fileName, keywords);
+        }
+        System.out.println("[INFO] CSV 캐싱 완료!");
+    }
+
+    public List<LectureProfessorPair> getLectureProfessorPairs() throws Exception {
+        Set<LectureProfessorPair> pairSet = new HashSet<>();
+
+        for (String fileName : LECTURE_FILE_MAP.values()) {
+            List<ReviewEntry> entries = labeledCache.get(fileName);
+            if (entries != null) {
+                for (ReviewEntry entry : entries) {
+                    pairSet.add(new LectureProfessorPair(
+                            entry.getLecture().trim(),
+                            entry.getProfessor().trim()
+                    ));
+                }
             }
         }
 
@@ -53,13 +74,8 @@ public class ReviewService {
             throw new IllegalArgumentException("해당 강의에 대한 파일이 존재하지 않습니다: " + lectureKey);
         }
 
-        // 감정 분석용 labeled 파일 읽기
-        List<ReviewEntry> allReviews = new CsvToBeanBuilder<ReviewEntry>(
-                new FileReader("data/" + fileName))
-                .withType(ReviewEntry.class)
-                .withIgnoreLeadingWhiteSpace(true)
-                .build()
-                .parse();
+        List<ReviewEntry> allReviews = labeledCache.get(fileName);
+        if (allReviews == null) throw new IllegalArgumentException("labeled cache 없음: " + fileName);
 
         List<ReviewEntry> filtered = allReviews.stream()
                 .filter(r -> r.getProfessor().trim().equals(professor.trim()))
@@ -95,28 +111,13 @@ public class ReviewService {
                 .limit(5)
                 .toList();
 
-        // 📌 키워드용 통합 파일에서 리뷰 추출
-        String keywordFile = "data/통합_" + fileName.replace("_reviews_labeled.csv", "_reviews.csv");
-
-        List<ReviewEntry> keywordReviews = new CsvToBeanBuilder<ReviewEntry>(
-                new FileReader(keywordFile))
-                .withType(ReviewEntry.class)
-                .withIgnoreLeadingWhiteSpace(true)
-                .build()
-                .parse();
-                
-        System.out.println("[DEBUG] 교수명: " + professor);
-        System.out.println("[DEBUG] 통합 CSV 교수 목록:");
-        keywordReviews.stream()
-            .map(ReviewEntry::getProfessor)
-            .distinct()
-            .forEach(System.out::println);
+        List<ReviewEntry> keywordReviews = keywordCache.get(fileName);
+        if (keywordReviews == null) throw new IllegalArgumentException("keyword cache 없음: " + fileName);
 
         List<String> keywordTexts = keywordReviews.stream()
                 .filter(r -> r.getProfessor().trim().equals(professor.trim()))
                 .map(ReviewEntry::getReview)
                 .toList();
-        System.out.println("[DEBUG] keywordTexts count: " + keywordTexts.size());
 
         List<KeywordEntry> topKeywords = KeywordExtractor.extractTopKeywords(keywordTexts);
 

@@ -42,7 +42,6 @@ public class KeywordExtractor {
             }
 
             int exitCode = process.waitFor();
-            System.out.println("[DEBUG] Python process 종료 코드: " + exitCode);
 
             if (exitCode != 0) {
                 throw new RuntimeException("Python process failed");
