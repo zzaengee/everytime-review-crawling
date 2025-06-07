@@ -1,34 +1,16 @@
-from konlpy.tag import Okt
-from collections import Counter
+import sys
 import json
+from wordcloud_util import extract_keywords, get_top_keywords, load_stopwords
 
-# 형태소 분석기 초기화
-okt = Okt()
+def main():
+    reviews = json.load(sys.stdin)
+    text_data = " ".join(reviews)
 
-# 불용어 로딩 함수
-def load_stopwords(path='stopwords.txt'):
-    try:
-        with open(path, encoding='utf-8') as f:
-            return set(line.strip() for line in f if line.strip())
-    except FileNotFoundError:
-        return set()
+    stopwords = load_stopwords("data/stopwords.txt")
+    keywords = extract_keywords(text_data, stopwords)
+    top_keywords = get_top_keywords(keywords, top_n=20)
 
-# 키워드 추출 함수
-def extract_keywords(texts, stopwords_path='stopwords.txt'):
-    stopwords = load_stopwords(stopwords_path)
-    keywords = []
+    print(json.dumps(top_keywords, ensure_ascii=False))
 
-    for text in texts:
-        # 명사만 추출
-        nouns = okt.nouns(text)
-        # 길이 1 초과 단어만 포함
-        filtered = [word for word in nouns if len(word) > 1 and word not in stopwords]
-        keywords.extend(filtered)
-
-    return keywords
-
-# 상위 N개 키워드 추출
-def get_top_keywords(keywords, n=20):
-    counter = Counter(keywords)
-    top_n = counter.most_common(n)
-    return [{'keyword': k, 'count': v} for k, v in top_n]
+if __name__ == "__main__":
+    main()
