@@ -104,11 +104,19 @@ public class ReviewService {
                 .withIgnoreLeadingWhiteSpace(true)
                 .build()
                 .parse();
+                
+        System.out.println("[DEBUG] 교수명: " + professor);
+        System.out.println("[DEBUG] 통합 CSV 교수 목록:");
+        keywordReviews.stream()
+            .map(ReviewEntry::getProfessor)
+            .distinct()
+            .forEach(System.out::println);
 
         List<String> keywordTexts = keywordReviews.stream()
                 .filter(r -> r.getProfessor().trim().equals(professor.trim()))
                 .map(ReviewEntry::getReview)
                 .toList();
+        System.out.println("[DEBUG] keywordTexts count: " + keywordTexts.size());
 
         List<KeywordEntry> topKeywords = KeywordExtractor.extractTopKeywords(keywordTexts);
 
