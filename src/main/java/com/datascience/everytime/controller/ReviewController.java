@@ -27,6 +27,8 @@ public class ReviewController {
             String decodedProfessor = URLDecoder.decode(professor, StandardCharsets.UTF_8);
 
             ReviewResult result = reviewService.getReviewResult(decodedLecture, decodedProfessor);
+            System.out.println("raw lecture: " + lecture);
+            System.out.println("decoded lecture: " + URLDecoder.decode(lecture, StandardCharsets.UTF_8));
             return ResponseEntity.ok(result);
         } catch (Exception e) {
             e.printStackTrace();
