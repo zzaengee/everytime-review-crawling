@@ -13,5 +13,5 @@ RUN ./mvnw clean package -DskipTests
 # Render에서 열리는 포트 (PORT는 환경변수로 들어옴)
 EXPOSE 8090
 
-# 실행 명령 - 빌드된 JAR 이름 맞게 바꿔줘야 함!!
-CMD ["java", "-jar", "target/everytiem-0.0.1-SNAPSHOT.jar"]
+# 실행 명령
+CMD ["java", "-jar", "target/everytime-0.0.1-SNAPSHOT.jar"]
