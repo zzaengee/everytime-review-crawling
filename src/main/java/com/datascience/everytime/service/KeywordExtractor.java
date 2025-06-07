@@ -8,7 +8,7 @@ import java.io.*;
 import java.util.*;
 
 public class KeywordExtractor {
-    private static final String PYTHON = "python3";
+    private static final String PYTHON = "python";
     private static final String SCRIPT_PATH = "src/main/resources/python/extract_keywords.py";
 
     public static List<KeywordEntry> extractTopKeywords(List<String> reviews) {
