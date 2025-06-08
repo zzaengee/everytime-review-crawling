@@ -5,6 +5,7 @@ from wordcloud_util import get_top_keywords, extract_keywords, load_stopwords  #
 
 app = Flask(__name__)
 
+
 @app.route("/keywords", methods=["POST"])
 def extract_keywords_api():
     data = request.get_json()
@@ -39,3 +40,7 @@ def extract_keywords_api():
     top_keywords = get_top_keywords(all_keywords)
 
     return jsonify(top_keywords)
+
+if __name__ == "__main__":
+    port = int(os.environ.get("PORT", 5050))
+    app.run(host="0.0.0.0", port=port)
