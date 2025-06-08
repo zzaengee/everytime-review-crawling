@@ -1,41 +1,35 @@
 from flask import Flask, request, jsonify
-from konlpy.tag import Okt
-from collections import Counter
-import json
+import pandas as pd
+import os
+from wordcloud_util import get_top_keywords
 
 app = Flask(__name__)
 
-# 불용어 로딩
-def load_stopwords(path="data/stopwords.txt"):
-    with open(path, "r", encoding="utf-8") as f:
-        return set(line.strip() for line in f if line.strip())
+@app.route("/keywords", methods=["POST"])
+def extract_keywords():
+    data = request.get_json()
+    lecture_key = data.get("lectureKey")  # 예: "대영RW"
+    professor = data.get("professor")     # 예: "Breckenfeld John E"
 
-stopwords = load_stopwords()
-okt = Okt()
+    if not lecture_key or not professor:
+        return jsonify({"error": "lectureKey and professor are required"}), 400
 
-# 키워드 추출 함수
-def extract_keywords(texts, top_n=20):
-    words = []
-    for text in texts:
-        tokens = okt.nouns(text)
-        filtered = [word for word in tokens if word not in stopwords and len(word) > 1]
-        words.extend(filtered)
+    # ✅ 파일 경로 조합
+    filename = f"통합_{lecture_key}_reviews.csv"
+    filepath = os.path.join("data", filename)
 
-    counter = Counter(words)
-    return counter.most_common(top_n)
+    if not os.path.exists(filepath):
+        return jsonify({"error": f"File not found: {filename}"}), 404
 
-@app.route("/keywords", methods=[POST])
-def get_keywords():
-    try:
-        data = request.get_json()
-        if not isinstance(data, list):
-            return jsonify({"error": "Expected a list of reviews"}), 400
+    df = pd.read_csv(filepath)
 
-        top_keywords = extract_keywords(data)
-        response = [{"keyword": k, "count": v} for k, v in top_keywords]
-        return jsonify(response)
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
+    # ✅ 교수명 필터링
+    filtered = df[df['professor'].str.strip() == professor.strip()]
 
-if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=5000)
+    reviews = filtered['review'].dropna().tolist()
+    if not reviews:
+        return jsonify([])  # 키워드 없음
+
+    # ✅ 키워드 추출
+    top_keywords = get_top_keywords(reviews)
+    return jsonify(top_keywords)

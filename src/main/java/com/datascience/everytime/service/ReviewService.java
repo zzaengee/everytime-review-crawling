@@ -23,7 +23,6 @@ public class ReviewService {
     );
 
     private final Map<String, List<ReviewEntry>> labeledCache = new HashMap<>();
-    private final Map<String, List<ReviewEntry>> keywordCache = new HashMap<>();
 
     @PostConstruct
     public void init() throws IOException {
@@ -35,14 +34,6 @@ public class ReviewService {
                     .build()
                     .parse();
             labeledCache.put(fileName, labeled);
-
-            String keywordPath = "data/통합_" + fileName.replace("_reviews_labeled.csv", "_reviews.csv");
-            List<ReviewEntry> keywords = new CsvToBeanBuilder<ReviewEntry>(new FileReader(keywordPath))
-                    .withType(ReviewEntry.class)
-                    .withIgnoreLeadingWhiteSpace(true)
-                    .build()
-                    .parse();
-            keywordCache.put(fileName, keywords);
         }
         System.out.println("[INFO] CSV 캐싱 완료!");
     }
@@ -111,15 +102,8 @@ public class ReviewService {
                 .limit(5)
                 .toList();
 
-        List<ReviewEntry> keywordReviews = keywordCache.get(fileName);
-        if (keywordReviews == null) throw new IllegalArgumentException("keyword cache 없음: " + fileName);
-
-        List<String> keywordTexts = keywordReviews.stream()
-                .filter(r -> r.getProfessor().trim().equals(professor.trim()))
-                .map(ReviewEntry::getReview)
-                .toList();
-
-        List<KeywordEntry> topKeywords = KeywordExtractor.extractTopKeywords(keywordTexts);
+        // ✅ Flask API 호출로 키워드 추출
+        List<KeywordEntry> topKeywords = KeywordExtractor.extractTopKeywords(lectureKey, professor);
 
         return new ReviewResult(actualLectureName, professor,
                 (int) (pos * 100 / total),

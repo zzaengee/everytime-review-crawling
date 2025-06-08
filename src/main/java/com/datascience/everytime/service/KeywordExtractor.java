@@ -4,36 +4,41 @@ import com.datascience.everytime.model.KeywordEntry;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
-import java.net.URI;
-import java.net.http.HttpClient;
-import java.net.http.HttpRequest;
-import java.net.http.HttpResponse;
+import java.io.BufferedReader;
+import java.io.InputStreamReader;
+import java.net.HttpURLConnection;
+import java.net.URLEncoder;
+import java.net.URL;
+import java.nio.charset.StandardCharsets;
 import java.util.Collections;
 import java.util.List;
 
 public class KeywordExtractor {
 
-    private static final String FLASK_URL = "http://localhost:5000/keywords";  // Render에 올리면 여기를 실제 URL로 변경
+    private static final String BASE_URL = "http://localhost:5050/keywords";
 
-    public static List<KeywordEntry> extractTopKeywords(List<String> reviews) {
+    public static List<KeywordEntry> extractTopKeywords(String lectureKey, String professor) {
         try {
-            ObjectMapper objectMapper = new ObjectMapper();
-            String jsonInput = objectMapper.writeValueAsString(reviews);
+            String encodedLecture = URLEncoder.encode(lectureKey, StandardCharsets.UTF_8);
+            String encodedProfessor = URLEncoder.encode(professor, StandardCharsets.UTF_8);
+            String urlWithParams = BASE_URL + "?lectureKey=" + encodedLecture + "&professor=" + encodedProfessor;
 
-            HttpClient client = HttpClient.newHttpClient();
-            HttpRequest request = HttpRequest.newBuilder()
-                    .uri(URI.create(FLASK_URL))
-                    .header("Content-Type", "application/json")
-                    .POST(HttpRequest.BodyPublishers.ofString(jsonInput))
-                    .build();
+            URL url = new URL(urlWithParams);
+            HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+            conn.setRequestMethod("GET");
 
-            HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
-
-            if (response.statusCode() != 200) {
-                throw new RuntimeException("Flask 서버 오류: " + response.statusCode());
+            // 응답 읽기
+            BufferedReader br = new BufferedReader(new InputStreamReader(conn.getInputStream(), StandardCharsets.UTF_8));
+            StringBuilder response = new StringBuilder();
+            String line;
+            while ((line = br.readLine()) != null) {
+                response.append(line.trim());
             }
+            br.close();
 
-            return objectMapper.readValue(response.body(), new TypeReference<List<KeywordEntry>>() {});
+            ObjectMapper mapper = new ObjectMapper();
+            return mapper.readValue(response.toString(), new TypeReference<List<KeywordEntry>>() {});
+
         } catch (Exception e) {
             e.printStackTrace();
             return Collections.emptyList();
