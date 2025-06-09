@@ -1,6 +1,7 @@
 import os
 from collections import Counter
-from soynlp.tokenizer import RegexTokenizer
+from konlpy.tag import Okt
+
 
 def load_stopwords():
     current_dir = os.path.dirname(os.path.abspath(__file__))
@@ -8,10 +9,11 @@ def load_stopwords():
     with open(stopword_path, 'r', encoding='utf-8') as f:
         return set(f.read().splitlines())
 
+
 def extract_keywords(text, stopwords):
-    tokenizer = RegexTokenizer()  # ✅ soynlp의 정규표현식 기반 토크나이저
-    words = tokenizer.tokenize(text)
-    keywords = [word for word in words if word not in stopwords and len(word) > 1]
+    okt = Okt()
+    words = okt.pos(text)  # 품사 태깅
+    keywords = [w for w, t in words if t in ['Noun', 'Adjective'] and w not in stopwords and len(w) > 1]
     return keywords
 
 def get_top_keywords(reviews, top_n=20):

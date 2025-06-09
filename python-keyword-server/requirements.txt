@@ -1,4 +1,4 @@
 flask
 pandas
-soynlp
+konlpy
 matplotlib
