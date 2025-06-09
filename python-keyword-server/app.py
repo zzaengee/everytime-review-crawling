@@ -1,7 +1,7 @@
 from flask import Flask, request, jsonify
 import pandas as pd
 import os
-from wordcloud_util import get_top_keywords, extract_keywords, load_stopwords  # ✅ 함수들 임포트
+from wordcloud_util import get_top_keywords, extract_keywords, load_stopwords, load_emotion_words # ✅ 함수들 임포트
 
 app = Flask(__name__)
 
@@ -30,11 +30,12 @@ def extract_keywords_api():
 
     # ✅ 불용어 로딩
     stopwords = load_stopwords()
+    emotion_words = load_emotion_words()
 
     # ✅ 전체 리뷰에서 키워드 추출
     all_keywords = []
     for review in reviews:
-        all_keywords.extend(extract_keywords(review, stopwords))
+        all_keywords.extend(extract_keywords(review, stopwords, emotion_words))  # ✅ 인자 추가
 
     # ✅ 상위 키워드 추출
     top_keywords = get_top_keywords(all_keywords)
